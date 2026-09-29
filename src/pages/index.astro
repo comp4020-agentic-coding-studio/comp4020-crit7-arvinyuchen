@@ -1,9 +1,10 @@
 ---
 import { seed } from "../lib/seed";
-import { clock, DAY_NAMES, loadTimetable, type SessionView } from "../lib/timetable";
+import { clock, DAY_NAMES, loadTimetable, type MeetingView, type SessionView, weekOf, weekRanges } from "../lib/timetable";
 import "../styles.css";
 
-const { attending, choosing } = loadTimetable();
+const { placements, choosing } = loadTimetable();
+const year = Number(/\d{4}/.exec(seed.term)?.[0] ?? new Date().getFullYear());
 
 const ERRORS: Record<string, string> = {
   full: "That session is full, so your timetable is unchanged.",
@@ -15,9 +16,10 @@ const error = ERRORS[Astro.url.searchParams.get("error") ?? ""];
 // The grid runs Monday to Friday, plus any weekend day something is on, over
 // whole hours from the earliest start to the latest finish. One grid row is
 // five minutes.
-const days = [1, 2, 3, 4, 5, 6, 7].filter((d) => d <= 5 || attending.some((s) => s.day === d));
-const first = attending.length ? Math.floor(Math.min(...attending.map((s) => s.start)) / 60) * 60 : 9 * 60;
-const last = attending.length ? Math.ceil(Math.max(...attending.map((s) => s.end)) / 60) * 60 : 17 * 60;
+const placed = placements.map((p) => p.meeting);
+const days = [1, 2, 3, 4, 5, 6, 7].filter((d) => d <= 5 || placed.some((m) => m.day === d));
+const first = placed.length ? Math.floor(Math.min(...placed.map((m) => m.start)) / 60) * 60 : 9 * 60;
+const last = placed.length ? Math.ceil(Math.max(...placed.map((m) => m.end)) / 60) * 60 : 17 * 60;
 const rows = (last - first) / 5;
 const hours = Array.from({ length: (last - first) / 60 }, (_, i) => first + i * 60);
 
@@ -25,18 +27,20 @@ const hours = Array.from({ length: (last - first) / 60 }, (_, i) => first + i * 
 // other, so a clash is visible as well as announced.
 function lanes(day: number) {
   const ends: number[] = [];
-  const placed = attending
-    .filter((s) => s.day === day)
-    .map((s) => {
-      let lane = ends.findIndex((end) => end <= s.start);
+  const onDay = placements
+    .filter((p) => p.meeting.day === day)
+    .map((p) => {
+      let lane = ends.findIndex((end) => end <= p.meeting.start);
       if (lane === -1) lane = ends.length;
-      ends[lane] = s.end;
-      return { s, lane };
+      ends[lane] = p.meeting.end;
+      return { ...p, lane };
     });
-  return { placed, count: Math.max(1, ends.length) };
+  return { onDay, count: Math.max(1, ends.length) };
 }
 
-const when = (s: SessionView) => `${DAY_NAMES[s.day - 1]} ${clock(s.start)}–${clock(s.end)}`;
+const when = (m: MeetingView) => `${DAY_NAMES[m.day - 1]} ${clock(m.start)}–${clock(m.end)}`;
+// a meeting in only a week or two (a tutorial moved for one week) is dated
+const oneOff = (m: MeetingView) => (m.weeks.length <= 2 ? `week of ${m.weeks.map((w) => weekOf(year, w)).join(" and ")} only` : "");
 // full means no seat for you; the session you already hold is never full
 const isFull = (s: SessionView) => s.seatsLeft !== null && s.seatsLeft <= 0 && !s.picked;
 function seats(s: SessionView): string {
@@ -66,7 +70,7 @@ function seats(s: SessionView): string {
       <section class="week" aria-labelledby="week-heading">
         <h2 id="week-heading">My timetable</h2>
         {
-          attending.length === 0 ? (
+          placements.length === 0 ? (
             <p>Nothing on your timetable yet.</p>
           ) : (
             <div class="grid" style={`--rows: ${rows}; --days: ${days.length}`}>
@@ -76,28 +80,29 @@ function seats(s: SessionView): string {
                 ))}
               </ol>
               {days.map((day) => {
-                const { placed, count } = lanes(day);
+                const { onDay, count } = lanes(day);
                 return (
                   <section class="day" aria-labelledby={`day-${day}`}>
                     <h3 id={`day-${day}`}>{DAY_NAMES[day - 1]}</h3>
-                    {placed.length === 0 && <p class="free">Free</p>}
+                    {onDay.length === 0 && <p class="free">Free</p>}
                     {
                       <ol
                         class:list={{ crowded: count > 1 }}
                         style={`--lanes: ${count}`}
-                        aria-hidden={placed.length === 0 ? "true" : undefined}>
-                        {placed.map(({ s, lane }) => (
+                        aria-hidden={onDay.length === 0 ? "true" : undefined}>
+                        {onDay.map(({ session: s, meeting: m, clashesWith, lane }) => (
                           <li
-                            class:list={["slot", s.activity.mode, { clash: s.clashesWith.length > 0 }]}
-                            style={`grid-row: ${(s.start - first) / 5 + 1} / ${(s.end - first) / 5 + 1}; grid-column: ${lane + 1}`}
+                            class:list={["slot", s.activity.mode, { clash: clashesWith.length > 0 }]}
+                            style={`grid-row: ${(m.start - first) / 5 + 1} / ${(m.end - first) / 5 + 1}; grid-column: ${lane + 1}`}
                           >
                             <strong>{s.title}</strong>
                             <span>
-                              {clock(s.start)}–{clock(s.end)} · {s.room}
+                              {clock(m.start)}–{clock(m.end)} · {m.room}
                             </span>
-                            {s.clashesWith.length > 0 && (
+                            {oneOff(m) && <span class="once">{oneOff(m)}</span>}
+                            {clashesWith.length > 0 && (
                               <span class="flag">
-                                Clash<span class="sr-only"> with {s.clashesWith.map((c) => c.title).join(", ")}</span>
+                                Clash<span class="sr-only"> with {clashesWith.map((c) => c.title).join(", ")}</span>
                               </span>
                             )}
                           </li>
@@ -153,7 +158,12 @@ function seats(s: SessionView): string {
                             />
                             <label for={`s-${s.id}`}>{s.title}</label>
                             <span class="detail" id={`d-${s.id}`}>
-                              {when(s)} · {s.room} · {seats(s)}
+                              {s.meetings.map((m) => (
+                                <span class="meeting">
+                                  {when(m)} · {m.room} · calendar weeks {weekRanges(m.weeks)}
+                                </span>
+                              ))}
+                              <span class="meeting">{seats(s)}</span>
                               {s.clashesWith.length > 0 && (
                                 <span class="flag">clashes with {s.clashesWith.map((c) => c.title).join(", ")}</span>
                               )}
@@ -162,15 +172,27 @@ function seats(s: SessionView): string {
                         );
                       })}
                     </ul>
-                    <button>{a.picked ? `Swap ${a.name.toLowerCase()}` : `Choose ${a.name.toLowerCase()}`}</button>
+                    <button>{a.picked ? `Swap ${a.name}` : `Choose ${a.name}`}</button>
                   </fieldset>
                 </form>
               ))}
             </section>
           ))
         }
+        {seed.seats && <p class="note">{seed.seats}</p>}
       </section>
     </main>
+    {
+      seed.source && (
+        <footer>
+          <p>
+            Sessions from the <a href={seed.source.project}>ANU CSSA unofficial timetable</a> (
+            <a href="https://creativecommons.org/licenses/by-sa/4.0/">{seed.source.licence}</a>), fetched{" "}
+            {seed.source.fetched}; starting picks from {seed.source.allocation}.
+          </p>
+        </footer>
+      )
+    }
     <script>
       // A change made in another tab re-renders this one from the database.
       const source = new EventSource("/api/events");

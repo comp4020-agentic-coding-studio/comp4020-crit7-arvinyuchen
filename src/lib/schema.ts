@@ -38,9 +38,9 @@ export const activities = sqliteTable(
   ],
 );
 
-// One time slot of an activity. Times are minutes after midnight so overlap
-// is plain integer comparison. `taken` is the seats other students held when
-// the snapshot was taken.
+// One offering of an activity that a student can be in, like TutA/05. A
+// session can meet more than once: most weeks on one day, a single week on
+// another. `taken` is the seats other students hold.
 export const sessions = sqliteTable(
   "sessions",
   {
@@ -49,17 +49,31 @@ export const sessions = sqliteTable(
       .notNull()
       .references(() => activities.id),
     label: text().notNull(),
+    capacity: int(),
+    taken: int(),
+  },
+  (t) => [uniqueIndex("sessions_activity_label").on(t.activityId, t.label)],
+);
+
+// When and where a session meets. Times are minutes after midnight and weeks
+// are ISO week numbers, comma separated, so a clash is the same day, an
+// overlapping time and at least one week in common.
+export const meetings = sqliteTable(
+  "meetings",
+  {
+    id: int().primaryKey({ autoIncrement: true }),
+    sessionId: int("session_id")
+      .notNull()
+      .references(() => sessions.id, { onDelete: "cascade" }),
     day: int().notNull(),
     start: int().notNull(),
     end: int().notNull(),
     room: text().notNull(),
-    capacity: int(),
-    taken: int(),
+    weeks: text().notNull(),
   },
   (t) => [
-    uniqueIndex("sessions_activity_label").on(t.activityId, t.label),
-    check("sessions_day", sql`${t.day} between 1 and 7`),
-    check("sessions_time", sql`${t.start} < ${t.end}`),
+    check("meetings_day", sql`${t.day} between 1 and 7`),
+    check("meetings_time", sql`${t.start} < ${t.end}`),
   ],
 );
 
@@ -81,4 +95,5 @@ export const picks = sqliteTable("picks", {
 export type Course = typeof courses.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
+export type Meeting = typeof meetings.$inferSelect;
 export type Pick = typeof picks.$inferSelect;

@@ -1,5 +1,389 @@
 {
   "term": "2026 Semester 2",
-  "source": "",
-  "courses": []
+  "source": {
+    "sessions": "https://timetable.cssa.club/timetable_data/2026/S2.min.json",
+    "project": "https://github.com/pl4nty/anutimetable",
+    "licence": "CC BY-SA 4.0",
+    "fetched": "2026-09-29",
+    "allocation": "my MyTimetable export (.ics), not committed"
+  },
+  "seats": "Seat numbers are illustrative, set for this prototype: neither the MyTimetable export nor the CSSA data publishes capacity. `taken` counts other students.",
+  "courses": [
+    {
+      "code": "COMP4020",
+      "title": "Advanced Topics in Human-Centred and Creative Computing: Agentic Coding Studio",
+      "activities": [
+        {
+          "name": "LecA",
+          "mode": "all",
+          "sessions": [
+            {
+              "label": "01",
+              "meetings": [
+                {
+                  "day": "Thu",
+                  "start": "11:00",
+                  "end": "13:00",
+                  "room": "Fulton Muir 2.02",
+                  "weeks": [
+                    31,
+                    32,
+                    33,
+                    34,
+                    35,
+                    36,
+                    39,
+                    40,
+                    41,
+                    42,
+                    43,
+                    44
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "TutA",
+          "mode": "pick",
+          "sessions": [
+            {
+              "label": "01",
+              "capacity": 24,
+              "taken": 17,
+              "meetings": [
+                {
+                  "day": "Mon",
+                  "start": "14:00",
+                  "end": "15:30",
+                  "room": "Marie Reay 4.03",
+                  "weeks": [
+                    32,
+                    33,
+                    34,
+                    35,
+                    36,
+                    39,
+                    40,
+                    42,
+                    43,
+                    44
+                  ]
+                },
+                {
+                  "day": "Tue",
+                  "start": "14:00",
+                  "end": "15:30",
+                  "room": "Marie Reay 4.03",
+                  "weeks": [
+                    41
+                  ]
+                }
+              ]
+            },
+            {
+              "label": "02",
+              "capacity": 24,
+              "taken": 21,
+              "meetings": [
+                {
+                  "day": "Mon",
+                  "start": "15:30",
+                  "end": "17:00",
+                  "room": "Marie Reay 4.03",
+                  "weeks": [
+                    32,
+                    33,
+                    34,
+                    35,
+                    36,
+                    39,
+                    40,
+                    42,
+                    43,
+                    44
+                  ]
+                },
+                {
+                  "day": "Wed",
+                  "start": "15:30",
+                  "end": "17:00",
+                  "room": "Marie Reay 3.05",
+                  "weeks": [
+                    41
+                  ]
+                }
+              ]
+            },
+            {
+              "label": "03",
+              "capacity": 24,
+              "taken": 24,
+              "meetings": [
+                {
+                  "day": "Wed",
+                  "start": "09:00",
+                  "end": "10:30",
+                  "room": "Marie Reay 4.03",
+                  "weeks": [
+                    32,
+                    33,
+                    34,
+                    35,
+                    36,
+                    39,
+                    40,
+                    41,
+                    42,
+                    43,
+                    44
+                  ]
+                }
+              ]
+            },
+            {
+              "label": "04",
+              "capacity": 24,
+              "taken": 9,
+              "meetings": [
+                {
+                  "day": "Wed",
+                  "start": "10:30",
+                  "end": "12:00",
+                  "room": "Marie Reay 4.03",
+                  "weeks": [
+                    32,
+                    33,
+                    34,
+                    35,
+                    36,
+                    39,
+                    40,
+                    41,
+                    42,
+                    43,
+                    44
+                  ]
+                }
+              ]
+            },
+            {
+              "label": "05",
+              "capacity": 24,
+              "taken": 22,
+              "meetings": [
+                {
+                  "day": "Wed",
+                  "start": "14:00",
+                  "end": "15:30",
+                  "room": "Marie Reay 4.03",
+                  "weeks": [
+                    32,
+                    33,
+                    34,
+                    35,
+                    36,
+                    39,
+                    40,
+                    41,
+                    42,
+                    43,
+                    44
+                  ]
+                }
+              ]
+            },
+            {
+              "label": "06",
+              "capacity": 24,
+              "taken": 13,
+              "meetings": [
+                {
+                  "day": "Wed",
+                  "start": "15:30",
+                  "end": "17:00",
+                  "room": "Marie Reay 4.03",
+                  "weeks": [
+                    32,
+                    33,
+                    34,
+                    35,
+                    36,
+                    39,
+                    40,
+                    41,
+                    42,
+                    43,
+                    44
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "MUSI1110",
+      "title": "Introduction to Music Technology",
+      "activities": [
+        {
+          "name": "LecA",
+          "mode": "all",
+          "sessions": [
+            {
+              "label": "01",
+              "meetings": [
+                {
+                  "day": "Tue",
+                  "start": "10:00",
+                  "end": "11:00",
+                  "room": "School of Music LT3",
+                  "weeks": [
+                    31,
+                    32,
+                    33,
+                    34,
+                    35,
+                    36,
+                    39,
+                    40,
+                    41,
+                    42,
+                    43,
+                    44
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "PreLecA",
+          "mode": "all",
+          "sessions": [
+            {
+              "label": "01",
+              "meetings": [
+                {
+                  "day": "Sun",
+                  "start": "11:00",
+                  "end": "12:00",
+                  "room": "prerecorded",
+                  "weeks": [
+                    30,
+                    31,
+                    32,
+                    33,
+                    34,
+                    35,
+                    38,
+                    39,
+                    40,
+                    41,
+                    42,
+                    43
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "TutA",
+          "mode": "pick",
+          "sessions": [
+            {
+              "label": "01",
+              "meetings": [
+                {
+                  "day": "Tue",
+                  "start": "11:00",
+                  "end": "12:00",
+                  "room": "School of Music 5.18",
+                  "weeks": [
+                    31,
+                    32,
+                    33,
+                    34,
+                    35,
+                    36,
+                    39,
+                    40,
+                    41,
+                    42,
+                    43,
+                    44
+                  ]
+                }
+              ]
+            },
+            {
+              "label": "02",
+              "meetings": [
+                {
+                  "day": "Tue",
+                  "start": "12:00",
+                  "end": "13:00",
+                  "room": "School of Music 5.18",
+                  "weeks": [
+                    31,
+                    32,
+                    33,
+                    34,
+                    35,
+                    36,
+                    39,
+                    40,
+                    41,
+                    42,
+                    43,
+                    44
+                  ]
+                }
+              ]
+            },
+            {
+              "label": "03",
+              "meetings": [
+                {
+                  "day": "Tue",
+                  "start": "13:00",
+                  "end": "14:00",
+                  "room": "School of Music 5.18",
+                  "weeks": [
+                    31,
+                    32,
+                    33,
+                    34,
+                    35,
+                    36,
+                    39,
+                    40,
+                    41,
+                    42,
+                    43,
+                    44
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "picks": [
+    {
+      "course": "COMP4020",
+      "activity": "TutA",
+      "label": "05"
+    },
+    {
+      "course": "MUSI1110",
+      "activity": "TutA",
+      "label": "03"
+    }
+  ]
 }

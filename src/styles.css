@@ -14,7 +14,7 @@
   --clash: #fdecea;
   --clash-edge: #b3261e;
   --clash-ink: #8c1d18;
-  --row: 0.4rem; /* one grid row is five minutes */
+  --row: 0.55rem; /* one grid row is five minutes */
   --radius: 0.4rem;
 }
 
@@ -114,6 +114,7 @@ h1 {
   border-inline-start: 4px solid var(--pick-edge);
   background: var(--pick);
   font-size: 0.85rem;
+  line-height: 1.3;
   overflow: hidden;
 }
 
@@ -247,4 +248,26 @@ button {
   margin-top: 0.8rem;
   padding: 0.4rem 1rem;
   font: inherit;
+}
+
+.meeting,
+.once {
+  display: block;
+}
+
+.once {
+  font-style: italic;
+}
+
+.note,
+footer {
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+footer {
+  max-width: 72rem;
+  margin: 2rem auto 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
 }

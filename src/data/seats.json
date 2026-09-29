@@ -1,0 +1,11 @@
+{
+  "note": "Seat numbers are illustrative, set for this prototype: neither the MyTimetable export nor the CSSA data publishes capacity. `taken` counts other students.",
+  "sessions": {
+    "COMP4020 TutA 01": { "capacity": 24, "taken": 17 },
+    "COMP4020 TutA 02": { "capacity": 24, "taken": 21 },
+    "COMP4020 TutA 03": { "capacity": 24, "taken": 24 },
+    "COMP4020 TutA 04": { "capacity": 24, "taken": 9 },
+    "COMP4020 TutA 05": { "capacity": 24, "taken": 22 },
+    "COMP4020 TutA 06": { "capacity": 24, "taken": 13 }
+  }
+}
