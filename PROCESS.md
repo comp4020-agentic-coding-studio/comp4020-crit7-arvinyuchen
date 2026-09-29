@@ -1,54 +1,81 @@
 # Process overview
 
-<!-- TEMPLATE: this file is a shape to fill in, not a form. Replace everything
-     in it with your own overview, and delete this comment — `pnpm
-     check:evidence` will remind you if it's still here. -->
-
-Written by you, for a reader: how you got from the brief to the harness and
-agentic workflow behind this submission. Markers read this file and follow its
-citations; they don't trawl the repo for evidence you didn't point at.
-
-This file is the shape; the course site's
-[assessment page](https://comp.anu.edu.au/courses/comp4020-agentic-coding-studio/topics/assessment/#what-you-submit)
-is the requirement, and its
-[word counts](https://comp.anu.edu.au/courses/comp4020-agentic-coding-studio/topics/assessment/#word-counts)
-cover every deliverable.
-
 ## What I built
 
-A sentence or two. `README.md` is where the account of what the app is and what
-good means here lives; this file is how you got there.
+A full-stack replacement for choosing tutorials in ANU timetabling, on my real
+2026 S2 courses, deployed to fly. `README.md` says what it is and what good
+means here; this is how I got there, working with Claude Code.
 
 ## How I got here
 
-The account of the process: how the work actually went, and how you knew the
-result was right. Tell it in whatever order makes it clear. A weekly prototype
-needs a paragraph or two; an assignment needs more.
+**Harness first.** I carried my working agreements forward from Assignment 2
+and dropped the rules that belonged to that site's subject
+([`fcc8a58`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-arvinyuchen/commit/fcc8a58)).
+The one that shaped this week was grounding: *never invent a fact about the
+real system; ask rather than guess.* Before any code, the spec's two checkable
+lines became a test that drives the running app over HTTP: choose a session,
+reload, and it's still there. It was committed red
+([`f4dfa34`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-arvinyuchen/commit/f4dfa34)).
 
-Cite the record as you go, as links whose text is the commit hash or range and
-whose target is this repo's commit or compare URL, so a reader clicks straight
-to the evidence:
+**Choosing the slice.**
 
-- one commit: [`a1b2c3d`](https://github.com/YOUR-ORG/YOUR-REPO/commit/a1b2c3d)
-- a range:
-  [`a1b2c3d...e4f5a6b`](https://github.com/YOUR-ORG/YOUR-REPO/compare/a1b2c3d...e4f5a6b)
+> let's start building the timetabling app
 
-To pair a prompt with the commit it produced, quote the prompt (curated, not a
-full transcript) next to the citation:
+Following the grounding rule, the agent asked before writing code: which part
+ruins my week, where the data comes from, and whose timetable it is. I answered
+all four pain points (invisible clashes, sessions filling up, no weekly view,
+painful swaps), my real timetable, and one student with no login. The agent
+built the machinery with the timetable file left **empty**, and checked it
+against an obviously fake fixture that was never committed
+([`0580535`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-arvinyuchen/commit/0580535)).
+Looking at the page in a browser, rather than trusting the tests, caught three
+things: clash text clipped in narrow cards, empty days without hour lines, and
+confusing "0 seats left" wording on a session I already held.
 
-> the prompt, verbatim
+**Grounding the data.** Instead of typing sessions in, I pointed the agent at a
+source:
 
-Screenshots are welcome where one carries the point better than a sentence does.
-Commit the file to this repo and link it with a **relative** path, which is what
-makes it render on GitHub: `![alt text](docs/before.png)`. Images don't count
-towards the word count and don't replace the citation.
+> https://timetable.cssa.club/?y=2026&s=S2 Can you check if you can get data
+> from this website.
 
-## Before you ship
+It found the JSON file behind the CSSA app and reported what that data can't
+do. It has no capacity. It's scraped from the old official timetable, not
+MyTimetable. It's licensed CC BY-SA. And one session can meet on different days
+in different weeks. Then I gave it my MyTimetable export:
 
-`pnpm check:evidence` verifies that this comment is gone, that your citations
-resolve to real commits, that a crit week's reflection entry is in
-`reflections/`, and that your `CLAUDE.md` is there. It checks that your account
-is traceable, not that it is good: that is the marker's call.
+> Check this
 
-Images aren't checked: unlike a citation whose SHA doesn't resolve, a broken
-image is visible the moment this file is rendered on GitHub.
+The two sources agreed on every one of my five allocations. That became the
+design: the export decides my courses and starting picks, the CSSA data lists
+the alternatives, and the import script fails on any mismatch. The schema moved
+from one slot per session to meetings with teaching weeks, so a clash needs a
+shared week
+([`dd6641a`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-arvinyuchen/commit/dd6641a)).
+My export stays out of the public repo.
+
+**Correcting course on seats.** I first said to ship without seats, then
+changed my mind mid-answer:
+
+> COMP4020, customise seats, ship with capacity
+
+When I told the agent to define the numbers itself, that ran straight into the
+grounding rule. The resolution kept the rule: the numbers are labelled as
+illustrative in the data and on the page, never presented as ANU's, and one
+tutorial is full so the refusal can be shown.
+
+**How I knew it was right.** The full suite passed on the real data. On the
+local build I swapped a tutorial and checked the database held one pick row,
+not two. After deploying, the same checks ran against the live app on fly:
+choose, reload, still there; a full session refused; a cross-site POST refused.
+Then my real picks were restored.
+
+**Things the agent got wrong that the checks caught:**
+
+- a sync step that would have deleted every pick
+- a `<=` that Astro's template parser read as a tag
+- a non-breaking space in the CSSA course titles
+- cards clipped at desktop widths, found by measuring the rendered page rather
+  than eyeballing a scaled screenshot
+
+It also caught one of mine: the first Fly token I pasted was scoped to my
+final-project app, not this one.
