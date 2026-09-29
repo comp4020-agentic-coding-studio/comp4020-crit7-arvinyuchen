@@ -1,8 +1,49 @@
 ---
-import { listMessages } from "../lib/db";
+import { seed } from "../lib/seed";
+import { clock, DAY_NAMES, loadTimetable, type SessionView } from "../lib/timetable";
 import "../styles.css";
 
-const messages = listMessages();
+const { attending, choosing } = loadTimetable();
+
+const ERRORS: Record<string, string> = {
+  full: "That session is full, so your timetable is unchanged.",
+  "not-pickable": "You attend every session of that activity, so there is nothing to choose.",
+  unknown: "That session isn't on offer, so your timetable is unchanged.",
+};
+const error = ERRORS[Astro.url.searchParams.get("error") ?? ""];
+
+// The grid runs Monday to Friday, plus any weekend day something is on, over
+// whole hours from the earliest start to the latest finish. One grid row is
+// five minutes.
+const days = [1, 2, 3, 4, 5, 6, 7].filter((d) => d <= 5 || attending.some((s) => s.day === d));
+const first = attending.length ? Math.floor(Math.min(...attending.map((s) => s.start)) / 60) * 60 : 9 * 60;
+const last = attending.length ? Math.ceil(Math.max(...attending.map((s) => s.end)) / 60) * 60 : 17 * 60;
+const rows = (last - first) / 5;
+const hours = Array.from({ length: (last - first) / 60 }, (_, i) => first + i * 60);
+
+// Sessions that overlap sit side by side in lanes rather than on top of each
+// other, so a clash is visible as well as announced.
+function lanes(day: number) {
+  const ends: number[] = [];
+  const placed = attending
+    .filter((s) => s.day === day)
+    .map((s) => {
+      let lane = ends.findIndex((end) => end <= s.start);
+      if (lane === -1) lane = ends.length;
+      ends[lane] = s.end;
+      return { s, lane };
+    });
+  return { placed, count: Math.max(1, ends.length) };
+}
+
+const when = (s: SessionView) => `${DAY_NAMES[s.day - 1]} ${clock(s.start)}–${clock(s.end)}`;
+// full means no seat for you; the session you already hold is never full
+const isFull = (s: SessionView) => s.seatsLeft !== null && s.seatsLeft <= 0 && !s.picked;
+function seats(s: SessionView): string {
+  if (s.seatsLeft === null) return "capacity not published";
+  if (s.picked) return `your seat is held, ${s.seatsLeft} of ${s.capacity} left`;
+  return isFull(s) ? "full" : `${s.seatsLeft} of ${s.capacity} seats left`;
+}
 ---
 
 <!doctype html>
@@ -10,44 +51,130 @@ const messages = listMessages();
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>COMP4020 prototype</title>
+    <title>My ANU timetable</title>
   </head>
   <body>
     <nav aria-label="site">
-      <a href="/">Guestbook</a>
+      <a href="/">Timetable</a>
       <a href="/readme/">About</a>
     </nav>
     <main>
-      <h1>Guestbook</h1>
-      <p>
-        A minimal full-stack starter: messages live in SQLite on the machine's
-        volume (state survives a reload and a redeploy), and new messages
-        appear in every open tab over a server-sent-events stream — open this
-        page twice and sign it in one. Replace all of this with your own
-        prototype.
-      </p>
-      <form method="post" action="/api/messages">
-        <label for="body">Leave a message</label>
-        <input id="body" name="body" required maxlength="500" />
-        <button>Sign</button>
-      </form>
-      <ul id="messages">
-        {messages.map((message) => <li>{message.body}</li>)}
-      </ul>
+      <h1>My ANU timetable <span class="term">{seed.term}</span></h1>
+
+      {error && <p class="notice" role="alert">{error}</p>}
+
+      <section class="week" aria-labelledby="week-heading">
+        <h2 id="week-heading">My timetable</h2>
+        {
+          attending.length === 0 ? (
+            <p>Nothing on your timetable yet.</p>
+          ) : (
+            <div class="grid" style={`--rows: ${rows}; --days: ${days.length}`}>
+              <ol class="hours" aria-hidden="true">
+                {hours.map((h) => (
+                  <li style={`grid-row: ${(h - first) / 5 + 1} / span 12`}>{clock(h)}</li>
+                ))}
+              </ol>
+              {days.map((day) => {
+                const { placed, count } = lanes(day);
+                return (
+                  <section class="day" aria-labelledby={`day-${day}`}>
+                    <h3 id={`day-${day}`}>{DAY_NAMES[day - 1]}</h3>
+                    {placed.length === 0 && <p class="free">Free</p>}
+                    {
+                      <ol
+                        class:list={{ crowded: count > 1 }}
+                        style={`--lanes: ${count}`}
+                        aria-hidden={placed.length === 0 ? "true" : undefined}>
+                        {placed.map(({ s, lane }) => (
+                          <li
+                            class:list={["slot", s.activity.mode, { clash: s.clashesWith.length > 0 }]}
+                            style={`grid-row: ${(s.start - first) / 5 + 1} / ${(s.end - first) / 5 + 1}; grid-column: ${lane + 1}`}
+                          >
+                            <strong>{s.title}</strong>
+                            <span>
+                              {clock(s.start)}–{clock(s.end)} · {s.room}
+                            </span>
+                            {s.clashesWith.length > 0 && (
+                              <span class="flag">
+                                Clash<span class="sr-only"> with {s.clashesWith.map((c) => c.title).join(", ")}</span>
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ol>
+                    }
+                  </section>
+                );
+              })}
+            </div>
+          )
+        }
+      </section>
+
+      <section class="choose" aria-labelledby="choose-heading">
+        <h2 id="choose-heading">Choose your sessions</h2>
+        {
+          choosing.length === 0 && (
+            <p>No courses loaded. Transcribe this term's timetable into <code>src/data/timetable.json</code>.</p>
+          )
+        }
+        {
+          choosing.map(({ course, activities }) => (
+            <section aria-labelledby={`course-${course.id}`}>
+              <h3 id={`course-${course.id}`}>
+                {course.code} <span class="course-title">{course.title}</span>
+              </h3>
+              {activities.map((a) => (
+                <form method="post" action="/api/picks">
+                  <fieldset>
+                    <legend>
+                      {a.name}
+                      {a.picked ? (
+                        <span class="state">you're in {a.picked.label}</span>
+                      ) : (
+                        <span class="state todo">not chosen</span>
+                      )}
+                    </legend>
+                    <ul>
+                      {a.sessions.map((s) => {
+                        const full = isFull(s);
+                        return (
+                          <li class:list={{ full, clash: s.clashesWith.length > 0 && !s.picked }}>
+                            <input
+                              type="radio"
+                              name="session"
+                              value={s.id}
+                              id={`s-${s.id}`}
+                              checked={s.picked}
+                              disabled={full}
+                              required
+                              aria-describedby={`d-${s.id}`}
+                            />
+                            <label for={`s-${s.id}`}>{s.title}</label>
+                            <span class="detail" id={`d-${s.id}`}>
+                              {when(s)} · {s.room} · {seats(s)}
+                              {s.clashesWith.length > 0 && (
+                                <span class="flag">clashes with {s.clashesWith.map((c) => c.title).join(", ")}</span>
+                              )}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <button>{a.picked ? `Swap ${a.name.toLowerCase()}` : `Choose ${a.name.toLowerCase()}`}</button>
+                  </fieldset>
+                </form>
+              ))}
+            </section>
+          ))
+        }
+      </section>
     </main>
     <script>
-      // The live half of the demo: subscribe to the SSE stream and prepend
-      // messages as they arrive. The form itself needs none of this — its
-      // POST + redirect re-renders the submitting tab from SQLite; this
-      // stream is how every other tab finds out.
-      const list = document.querySelector("#messages");
+      // A change made in another tab re-renders this one from the database.
       const source = new EventSource("/api/events");
-      source.addEventListener("message", (event) => {
-        const message = JSON.parse(event.data);
-        const item = document.createElement("li");
-        item.textContent = message.body;
-        list?.prepend(item);
-      });
+      source.addEventListener("change", () => location.reload());
     </script>
   </body>
 </html>

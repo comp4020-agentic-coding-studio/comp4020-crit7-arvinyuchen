@@ -1,14 +1,13 @@
 import type { APIRoute } from "astro";
-import type { Message } from "../../lib/db";
 import { bus } from "../../lib/events";
 
 // The minimal server-sent-events (SSE) pattern: a long-lived streaming
-// response the browser consumes with `new EventSource("/api/events")`.
-// SSE is one-directional (server → browser) and plain HTTP, which makes it
-// the simplest live channel that works everywhere — reach for WebSockets
-// only when the client needs to push over the same connection.
+// response the browser consumes with `new EventSource("/api/events")`. Every
+// change to the student's picks is announced here, so a timetable open in
+// another tab doesn't go stale. CI's post-deploy check expects this endpoint
+// to stream, so it stays even while the app has a single user.
 export const GET: APIRoute = () => {
-  let onMessage: (message: Message) => void;
+  let onChange: () => void;
   let heartbeat: ReturnType<typeof setInterval>;
 
   const stream = new ReadableStream<string>({
@@ -18,14 +17,12 @@ export const GET: APIRoute = () => {
       // connection as idle
       controller.enqueue(": connected\n\n");
       heartbeat = setInterval(() => controller.enqueue(": ping\n\n"), 30_000);
-      onMessage = (message) => {
-        controller.enqueue(`data: ${JSON.stringify(message)}\n\n`);
-      };
-      bus.on("message", onMessage);
+      onChange = () => controller.enqueue("event: change\ndata: {}\n\n");
+      bus.on("change", onChange);
     },
     cancel() {
       clearInterval(heartbeat);
-      bus.off("message", onMessage);
+      bus.off("change", onChange);
     },
   });
 
