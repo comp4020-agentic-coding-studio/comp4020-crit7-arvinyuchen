@@ -39,6 +39,18 @@ function lanes(day: number) {
 }
 
 const when = (m: MeetingView) => `${DAY_NAMES[m.day - 1]} ${clock(m.start)}–${clock(m.end)}`;
+// Where a session would sit on the grid, carried on its radio button so the
+// page can preview a choice before it's saved. Kept out of the timetable
+// itself: that region lists only what the student actually attends.
+const preview = (s: SessionView) =>
+  JSON.stringify(
+    s.meetings.map((m) => ({
+      day: m.day,
+      rows: `${Math.max(1, (m.start - first) / 5 + 1)} / ${Math.min(rows + 1, (m.end - first) / 5 + 1)}`,
+      time: `${clock(m.start)}–${clock(m.end)} · ${m.room}`,
+      once: oneOff(m),
+    })),
+  );
 // a meeting in only a week or two (a tutorial moved for one week) is dated
 const oneOff = (m: MeetingView) => (m.weeks.length <= 2 ? `week of ${m.weeks.map((w) => weekOf(year, w)).join(" and ")} only` : "");
 // full means no seat for you; the session you already hold is never full
@@ -90,10 +102,12 @@ function seats(s: SessionView): string {
                       <ol
                         class:list={{ crowded: count > 1 }}
                         style={`--lanes: ${count}`}
-                        aria-hidden={onDay.length === 0 ? "true" : undefined}>
+                        aria-hidden={onDay.length === 0 ? "true" : undefined}
+                        data-day={day}>
                         {onDay.map(({ session: s, meeting: m, clashesWith, lane }) => (
                           <li
                             class:list={["slot", s.activity.mode, { clash: clashesWith.length > 0 }]}
+                            data-session={s.id}
                             style={`grid-row: ${(m.start - first) / 5 + 1} / ${(m.end - first) / 5 + 1}; grid-column: ${lane + 1}`}
                           >
                             <strong>{s.title}</strong>
@@ -132,7 +146,7 @@ function seats(s: SessionView): string {
                 {course.code} <span class="course-title">{course.title}</span>
               </h3>
               {activities.map((a) => (
-                <form method="post" action="/api/picks">
+                <form method="post" action="/api/picks" data-picked={a.picked?.id}>
                   <fieldset>
                     <legend>
                       {a.name}
@@ -156,6 +170,9 @@ function seats(s: SessionView): string {
                               disabled={full}
                               required
                               aria-describedby={`d-${s.id}`}
+                              data-title={s.title}
+                              data-clash={s.clashesWith.length > 0 ? "true" : undefined}
+                              data-meetings={preview(s)}
                             />
                             <label for={`s-${s.id}`}>{s.title}</label>
                             <span class="detail" id={`d-${s.id}`}>
@@ -199,6 +216,63 @@ function seats(s: SessionView): string {
       // A change made in another tab re-renders this one from the database.
       const source = new EventSource("/api/events");
       source.addEventListener("change", () => location.reload());
+
+      // Preview a choice before it's saved: selecting a different session
+      // outlines the pick it would replace and draws the new one, faded, in
+      // the week. Nothing is stored until the form is submitted.
+      type Meeting = { day: number; rows: string; time: string; once: string };
+
+      function clearPreview(form: HTMLFormElement) {
+        const picked = form.dataset.picked;
+        if (picked) {
+          for (const slot of document.querySelectorAll(`.week .slot[data-session="${picked}"]`)) {
+            slot.classList.remove("leaving");
+          }
+        }
+        for (const ghost of document.querySelectorAll(`.week .ghost[data-form="${form.dataset.formId}"]`)) {
+          ghost.remove();
+        }
+      }
+
+      function showPreview(form: HTMLFormElement, radio: HTMLInputElement) {
+        clearPreview(form);
+        const picked = form.dataset.picked;
+        if (radio.value === picked) return;
+        if (picked) {
+          for (const slot of document.querySelectorAll(`.week .slot[data-session="${picked}"]`)) {
+            slot.classList.add("leaving");
+          }
+        }
+        const meetings: Meeting[] = JSON.parse(radio.dataset.meetings ?? "[]");
+        for (const m of meetings) {
+          const day = document.querySelector<HTMLOListElement>(`.week ol[data-day="${m.day}"]`);
+          if (!day) continue;
+          const ghost = document.createElement("li");
+          ghost.className = radio.dataset.clash ? "slot ghost clash" : "slot ghost";
+          ghost.dataset.form = form.dataset.formId;
+          ghost.style.gridRow = m.rows;
+          const title = document.createElement("strong");
+          title.textContent = `${radio.dataset.title} (preview)`;
+          const time = document.createElement("span");
+          time.textContent = m.time;
+          ghost.append(title, time);
+          if (m.once) {
+            const once = document.createElement("span");
+            once.className = "once";
+            once.textContent = m.once;
+            ghost.append(once);
+          }
+          day.append(ghost);
+        }
+      }
+
+      document.querySelectorAll<HTMLFormElement>(".choose form").forEach((form, i) => {
+        form.dataset.formId = String(i);
+        form.addEventListener("change", (event) => {
+          const radio = event.target as HTMLInputElement;
+          if (radio.type === "radio") showPreview(form, radio);
+        });
+      });
     </script>
   </body>
 </html>

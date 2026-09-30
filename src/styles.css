@@ -294,3 +294,35 @@ footer {
     padding-inline-end: 0.5rem;
   }
 }
+
+/* --- previewing a choice before it's saved ---------------------------------- */
+
+/* the pick that would be replaced: kept at full strength, outlined and
+   labelled, so it's obvious which slot is on its way out */
+.slot.leaving {
+  outline: 3px solid var(--clash-edge);
+  outline-offset: 1px;
+}
+
+.slot.leaving::after {
+  content: "will be replaced";
+  font-weight: 600;
+  color: var(--clash-ink);
+}
+
+/* the session being considered: faded by a dashed edge and a paler fill, not
+   by opacity, so its text keeps full contrast. It spans every lane of the
+   day, over anything it would clash with. */
+.slot.ghost {
+  grid-column: 1 / -1;
+  z-index: 1;
+  border: 2px dashed var(--pick-edge);
+  border-inline-start-width: 4px;
+  background: color-mix(in srgb, var(--pick) 70%, transparent);
+  color: var(--ink-muted);
+}
+
+.slot.ghost.clash {
+  border-color: var(--clash-edge);
+  background: color-mix(in srgb, var(--clash) 70%, transparent);
+}
