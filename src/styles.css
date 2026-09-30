@@ -311,11 +311,9 @@ footer {
 }
 
 /* the session being considered: faded by a dashed edge and a paler fill, not
-   by opacity, so its text keeps full contrast. It spans every lane of the
-   day, over anything it would clash with. */
+   by opacity, so its text keeps full contrast. Beside anything it overlaps,
+   in a lane of its own. */
 .slot.ghost {
-  grid-column: 1 / -1;
-  z-index: 1;
   border: 2px dashed var(--pick-edge);
   border-inline-start-width: 4px;
   background: color-mix(in srgb, var(--pick) 70%, transparent);

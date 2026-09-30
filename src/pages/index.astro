@@ -229,9 +229,34 @@ function seats(s: SessionView): string {
             slot.classList.remove("leaving");
           }
         }
-        for (const ghost of document.querySelectorAll(`.week .ghost[data-form="${form.dataset.formId}"]`)) {
+        for (const ghost of document.querySelectorAll<HTMLElement>(`.week .ghost[data-form="${form.dataset.formId}"]`)) {
+          const day = ghost.parentElement as HTMLOListElement;
           ghost.remove();
+          // give back the lane the preview borrowed
+          if (day.dataset.lanes) {
+            day.style.setProperty("--lanes", day.dataset.lanes);
+            day.classList.toggle("crowded", Number(day.dataset.lanes) > 1);
+            delete day.dataset.lanes;
+          }
         }
+      }
+
+      const span = (rows: string) => rows.split("/").map((n) => Number.parseInt(n, 10));
+
+      // A preview that overlaps something already on that day gets a lane of
+      // its own beside it, the way a clash does, instead of covering it.
+      function laneFor(day: HTMLOListElement, rows: string): string {
+        const [start, end] = span(rows);
+        const overlaps = [...day.querySelectorAll<HTMLElement>(".slot:not(.ghost)")].some((slot) => {
+          const [s, e] = [Number(slot.style.gridRowStart), Number(slot.style.gridRowEnd)];
+          return start < e && s < end;
+        });
+        if (!overlaps) return "1 / -1";
+        const lanes = Number(day.dataset.lanes ?? getComputedStyle(day).getPropertyValue("--lanes")) || 1;
+        day.dataset.lanes ??= String(lanes);
+        day.style.setProperty("--lanes", String(lanes + 1));
+        day.classList.add("crowded");
+        return String(lanes + 1);
       }
 
       function showPreview(form: HTMLFormElement, radio: HTMLInputElement) {
@@ -251,6 +276,7 @@ function seats(s: SessionView): string {
           ghost.className = radio.dataset.clash ? "slot ghost clash" : "slot ghost";
           ghost.dataset.form = form.dataset.formId;
           ghost.style.gridRow = m.rows;
+          ghost.style.gridColumn = laneFor(day, m.rows);
           const title = document.createElement("strong");
           title.textContent = `${radio.dataset.title} (preview)`;
           const time = document.createElement("span");
