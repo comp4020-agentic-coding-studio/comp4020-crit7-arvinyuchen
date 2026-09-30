@@ -67,6 +67,7 @@ function seats(s: SessionView): string {
 
       {error && <p class="notice" role="alert">{error}</p>}
 
+      <div class="layout">
       <section class="week" aria-labelledby="week-heading">
         <h2 id="week-heading">My timetable</h2>
         {
@@ -181,6 +182,7 @@ function seats(s: SessionView): string {
         }
         {seed.seats && <p class="note">{seed.seats}</p>}
       </section>
+      </div>
     </main>
     {
       seed.source && (

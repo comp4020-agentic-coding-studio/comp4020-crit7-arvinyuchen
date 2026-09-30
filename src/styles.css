@@ -32,14 +32,14 @@ body {
 }
 
 main {
-  max-width: 72rem;
+  max-width: 96rem;
   margin: 0 auto;
 }
 
 nav {
   display: flex;
   gap: 1rem;
-  max-width: 72rem;
+  max-width: 96rem;
   margin: 0 auto 1rem;
 }
 
@@ -266,8 +266,31 @@ footer {
 }
 
 footer {
-  max-width: 72rem;
+  max-width: 96rem;
   margin: 2rem auto 0;
   padding-top: 1rem;
   border-top: 1px solid var(--line);
+}
+
+/* --- two columns: the week beside the picker ------------------------------ */
+
+/* Wide enough for both: the timetable takes the room, the picker a fixed
+   column that stays in view while the week scrolls. Below this the picker
+   sits under the timetable, as on a phone. */
+@media (min-width: 75rem) {
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 24rem;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  .choose {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    margin-top: 0;
+    padding-inline-end: 0.5rem;
+  }
 }
